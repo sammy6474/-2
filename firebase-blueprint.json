@@ -1,0 +1,57 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with role and group information",
+      "type": "object",
+      "properties": {
+        "role": { "type": "string", "enum": ["senior", "guardian", "solo"] },
+        "name": { "type": "string" },
+        "groupCode": { "type": "string", "description": "Code to link senior to guardian" }
+      },
+      "required": ["role", "name"]
+    },
+    "Group": {
+      "title": "Group",
+      "description": "A group connecting a guardian to multiple seniors",
+      "type": "object",
+      "properties": {
+        "adminId": { "type": "string", "description": "UID of the guardian" },
+        "groupCode": { "type": "string" },
+        "memberIds": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["adminId", "groupCode", "memberIds"]
+    },
+    "Medication": {
+      "title": "Medication",
+      "description": "Information about a medication and its schedule",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Name of the medicine" },
+        "dosage": { "type": "string" },
+        "schedule": { 
+          "type": "array", 
+          "items": { "type": "string" },
+          "description": "When to take the medicine (e.g., morning, afternoon, evening)"
+        },
+        "instructions": { "type": "string" },
+        "sideEffects": { "type": "string" },
+        "precautions": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string", "description": "Senior's UID" },
+        "takenToday": { "type": "boolean" },
+        "status": { "type": "string", "enum": ["pending_approval", "approved"] },
+        "imageUrl": { "type": "string" }
+      },
+      "required": ["name", "schedule", "userId", "status", "takenToday", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": "User", "description": "User profiles" },
+    "/groups/{groupId}": { "schema": "Group", "description": "Guardian groups" },
+    "/medications/{medicationId}": {
+      "schema": "Medication",
+      "description": "Collection of medications for users"
+    }
+  }
+}

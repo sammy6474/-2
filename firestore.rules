@@ -1,0 +1,87 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId (auth.uid)
+    // Fields:
+    //   - role: string (senior, guardian, solo)
+    //   - name: string
+    //   - groupCode: string (optional)
+    //
+    // Collection: groups
+    // Document ID: adminId (guardian's auth.uid)
+    // Fields:
+    //   - adminId: string
+    //   - groupCode: string
+    //   - memberIds: list of strings (senior UIDs)
+    //
+    // Collection: medications
+    // Document ID: medicationId
+    // Fields:
+    //   - name: string
+    //   - dosage: string
+    //   - schedule: list of strings
+    //   - instructions: string
+    //   - sideEffects: string
+    //   - precautions: string
+    //   - createdAt: timestamp
+    //   - userId: string (senior's UID)
+    //   - takenToday: bool
+    //   - status: string (pending_approval, approved)
+    //   - imageUrl: string (optional)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isGuardianOf(seniorId) {
+      // Check if the current user is a guardian and has seniorId in their group
+      let group = get(/databases/$(database)/documents/groups/$(request.auth.uid)).data;
+      return group != null && seniorId in group.memberIds;
+    }
+
+    function isSeniorOf(guardianId) {
+      // Check if the current user is a senior in the guardian's group
+      let group = get(/databases/$(database)/documents/groups/$(guardianId)).data;
+      return group != null && request.auth.uid in group.memberIds;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['role', 'name']) &&
+             data.role in ['senior', 'guardian', 'solo'] &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100;
+    }
+
+    function isValidGroup(data) {
+      return data.keys().hasAll(['adminId', 'groupCode', 'memberIds']) &&
+             data.adminId == request.auth.uid &&
+             data.groupCode is string &&
+             data.memberIds is list;
+    }
+
+    function isValidMedication(data) {
+      return data.keys().hasAll(['name', 'schedule', 'userId', 'takenToday', 'createdAt', 'status']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
+             data.schedule is list &&
+             data.userId is string &&
+             data.takenToday is bool &&
+             data.status in ['pending_approval', 'approved'];
+    }
+
+    // Allow any authenticated user to read and write to any document
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

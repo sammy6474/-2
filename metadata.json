@@ -1,0 +1,8 @@
+{
+  "name": "Remix: 실버보이스 (Silver Voice)",
+  "description": "어르신의 건강을 지키는 다정한 비서, 실버보이스",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
